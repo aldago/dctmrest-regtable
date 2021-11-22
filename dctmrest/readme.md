@@ -1,7 +1,7 @@
 Custom resource for consuming registered tables on Documentum
 
 # Endpoint
-/repositories/<repository>/registeredtable/<table_name>/row
+/repositories/{repositoryName}/registeredtable/{table_name}/row
 
 # Example body messages
 ## POST
