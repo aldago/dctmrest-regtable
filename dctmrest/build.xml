@@ -1,0 +1,167 @@
+<!--
+  ~ Copyright (c) 2017. Open Text Corporation. All Rights Reserved.
+  -->
+<project>
+    <description>
+    build rest extension sample
+    </description>
+
+    <!--set global properties for this build-->
+    <property name="src" location="src"/>
+    <property name="src.model" location="${src}/documentum-rest-extension-model"/>
+    <property name="src.persistence" location="${src}/documentum-rest-extension-persistence"/>
+    <property name="src.resource" location="${src}/documentum-rest-extension-resource"/>
+    <property name="src.model.java" location="${src.model}/java"/>
+    <property name="src.persistence.java" location="${src.persistence}/java"/>
+    <property name="src.resource.java" location="${src.resource}/java"/>
+    <property name="src.model.resources" location="${src.model}/resources"/>
+    <property name="src.persistence.resources" location="${src.persistence}/resources"/>
+    <property name="src.resource.resources" location="${src.resource}/resources"/>
+    <property name="war" location="war"/>
+    <property name="war.web-info" location="${war}/WEB-INF/"/>
+    <property name="war.web-info.classes" location="${war.web-info}/classes/"/>
+    <property name="build" location="build"/>
+    <property name="build.classes" location="${build}/classes/"/>
+    <!--property name="build.classes" location="org.apache.maven.model.Build@13eaf110/classes/"/-->
+    <property name="build.classes.model" location="${build.classes}/model"/>
+    <property name="build.classes.persistence" location="${build.classes}/persistence"/>
+    <property name="build.classes.resource" location="${build.classes}/resource"/>
+	<property name="build.jars" location="${build}/jars/"/>
+    <!--property name="build.jars" location="org.apache.maven.model.Build@13eaf110/jars/"/-->
+	<property name="lib" location="${build}/../lib/"/>
+    <!--property name="lib" location="org.apache.maven.model.Build@13eaf110/lib/"/-->
+    <property name="dist" location="dist"/>
+
+    <!--print help info-->
+    <target name="info" description="print info about usage of the build.xml">
+        <echo message="Available tasks for the project"/>
+        <echo message="ant clean    - to clean the project"/>
+        <echo message="ant prepare  - to prompt user web application name/version and initialize the dependencies"/>
+        <echo message="ant compile  - to compile the project"/>
+        <echo message="ant package  - to package the Jar files for the project"/>
+        <echo message="ant dist     - to assemble binaries to distribute web application archive"/>
+        <echo message="ant all      - to recover project and distribute war file"/>
+    </target>
+
+    <!--clean the project-->
+    <target name="clean" description="clean the folders org.apache.maven.model.Build@13eaf110 and ${dist}">
+        <echo message="Removing folder org.apache.maven.model.Build@13eaf110"/>
+        <delete dir="org.apache.maven.model.Build@13eaf110"/>
+        <echo message="Removing folder ${dist}"/>
+        <delete dir="${dist}"/>
+    </target>
+
+    <!--prepare lib-->
+    <target name="prepare" description="extract the dependencies from sdk_root/lib to ${lib}">
+        <!--input message="Please enter web application name:"
+               addproperty="web.app.name"
+               defaultvalue="rest-extension-sample"/>
+        <input message="Please enter web application version:"
+               addproperty="web.app.version"
+               defaultvalue="7.2.0"/-->
+    	<property name="web.app.name" value="registertable-dctm-rest"/>
+    	<property name="web.app.version" value="1.0"/>
+
+        <echo message="Prepare the dependencies in ${lib}"/>
+        <copy todir="${lib}" flatten="true">
+            <fileset dir="${build}/../lib/">
+                <include name="**/*.jar"/>
+            </fileset>
+        </copy>
+    </target>
+
+    <!--compile sample-->
+    <target name="compile" depends="prepare"
+            description="compile the source ">
+        <echo message="Compile the source code and put the class files in ${build.classes}"/>
+        <path id="dependencies">
+            <fileset dir="${lib}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </path>
+
+        <mkdir dir="${build.classes}"/>
+        <mkdir dir="${build.classes.model}"/>
+        <mkdir dir="${build.classes.persistence}"/>
+        <mkdir dir="${build.classes.resource}"/>
+
+        <javac includeantruntime="false" srcdir="${src.model.java}" destdir="${build.classes.model}"
+               classpathref="dependencies"/>
+        <javac includeantruntime="false" srcdir="${src.persistence.java}" destdir="${build.classes.persistence}">
+            <classpath>
+                <path refid="dependencies"/>
+                <pathelement location="${build.classes.model}"/>
+            </classpath>
+        </javac>
+        <javac includeantruntime="false" srcdir="${src.resource.java}" destdir="${build.classes.resource}">
+            <classpath>
+                <path refid="dependencies"/>
+                <pathelement location="${build.classes.model}"/>
+                <pathelement location="${build.classes.persistence}"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <!--create jar files for sample-->
+    <target name="package" depends="compile"
+            description="generate the Jar files">
+        <echo message="Package the class files as Jar files in ${build.jars}"/>
+
+        <copy todir="${build.classes.model}" failonerror="false">
+            <fileset dir="${src.model.resources}">
+                <include name="**/*.*"/>
+            </fileset>
+        </copy>
+        <copy todir="${build.classes.persistence}" failonerror="false">
+            <fileset dir="${src.persistence.resources}">
+                <include name="**/*.*"/>
+            </fileset>
+        </copy>
+        <copy todir="${build.classes.resource}" failonerror="false">
+            <fileset dir="${src.resource.resources}">
+                <include name="**/*.*"/>
+            </fileset>
+        </copy>
+
+        <jar jarfile="${build.jars}/${web.app.name}-model-${web.app.version}.jar" basedir="${build.classes.model}">
+            <manifest>
+                <attribute name="version" value="${web.app.version}"/>
+            </manifest>
+        </jar>
+        <jar jarfile="${build.jars}/${web.app.name}-persistence-${web.app.version}.jar" basedir="${build.classes.persistence}">
+            <manifest>
+                <attribute name="version" value="${web.app.version}"/>
+            </manifest>
+        </jar>
+        <jar jarfile="${build.jars}/${web.app.name}-resource-${web.app.version}.jar" basedir="${build.classes.resource}">
+            <manifest>
+                <attribute name="version" value="${web.app.version}"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <!--package web app-->
+    <target name="dist" depends="package">
+        <echo message="Package the Jar files to ${lib}"/>
+        <copy todir="${lib}">
+            <fileset dir="${build.jars}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </copy>
+
+        <echo message="Assemble binaries to distribute web application archive in ${dist}"/>
+        <war destfile="${dist}/${web.app.name}-${web.app.version}.war" webxml="${war.web-info}/web.xml">
+            <fileset dir="${war}"/>
+            <lib dir="${lib}">
+                <exclude name="**/*javax.servlet-api-*.jar"/>
+            </lib>
+            <manifest>
+                <attribute name="version" value="${web.app.version}"/>
+            </manifest>
+        </war>
+    </target>
+
+    <target name="all" depends="clean, dist">
+        <echo message="Finish archiving web application ${dist}/${web.app.name}-${web.app.version}.war"/>
+    </target>
+</project>
